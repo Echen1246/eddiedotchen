@@ -1,0 +1,55 @@
+[
+  {
+    "title": "openedai",
+    "description": "Abliterated Qwen 2.5 72B param model. ~4 min spin-up.",
+    "url": "https://modeltesting--qwen72b-abliterated-serve.modal.run/"
+  },
+  {
+    "title": "smarternano",
+    "description": "Extended nanochat transformer with personality fine-tuning (recognized by Karpathy)",
+    "url": "https://space3--nanochat-serve-chat.modal.run/"
+  },
+  {
+    "title": "Melo",
+    "description": "ML-powered dermatology triage achieving 97% accuracy (HackTech 2025)",
+    "url": "https://www.mymelo.org/"
+  },
+  {
+    "title": "Grocero",
+    "description": "Meal planning platform serving 5,000+ monthly users",
+    "url": "https://grocero.vercel.app/"
+  },
+  {
+    "title": "Windborne",
+    "description": "Data visualizer for Windborne's weather balloon service",
+    "url": "https://windborne-pi.vercel.app/"
+  },
+  {
+    "title": "auto-snap",
+    "description": "Local Snapchat automation system with LLM APIs for auto-messages. Built for scaling marketing funnelling.",
+    "url": "https://github.com/Echen1246/automate-sc"
+  },
+  {
+    "title": "Orchestrate.ai",
+    "description": "Distributed browser automation system for AI-powered productivity scaling"
+  },
+  {
+    "title": "Syllab.ai",
+    "description": "AI-powered educational platform with personalized study recommendations",
+    "url": "https://lahacks-kpg2-2cjvqzcg6-echen1246s-projects.vercel.app/"
+  },
+  {
+    "title": "AtomicPDF",
+    "description": "Beginner project. Simple PDF toolkit for merging, splitting, and converting documents.",
+    "url": "https://www.atomicpdf.org/"
+  },
+  {
+    "title": "Scrapy",
+    "description": "Chrome extension for intelligent data gathering and research",
+    "url": "https://chromewebstore.google.com/detail/scrapy/hohnpoeceiecjgbihcapbbkgcjjmjlfh?hl=en-US"
+  },
+  {
+    "title": "Sentiscape",
+    "description": "Real-time sentiment analysis platform for businesses and researchers"
+  }
+]
