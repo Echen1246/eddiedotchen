@@ -11,7 +11,7 @@ const Resume: NextPageWithLayout = () => {
       <Flex direction="column" gap={4}>
         <Flex justify="space-between" align="center">
           <Heading size="lg">Resume</Heading>
-          <Link href="/Edward Chen's Resume.pdf" download isExternal>
+          <Link href="/Edward-Chen-Resume.pdf" download isExternal>
             <Button leftIcon={<Icon as={FiDownload} />} colorScheme="blue" size="sm">
               Download PDF
             </Button>
@@ -19,7 +19,7 @@ const Resume: NextPageWithLayout = () => {
         </Flex>
         <Box
           as="iframe"
-          src="/Edward Chen's Resume.pdf"
+          src="/Edward-Chen-Resume.pdf"
           width="100%"
           height="800px"
           border="1px solid"
