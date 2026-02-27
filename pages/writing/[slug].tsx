@@ -1,11 +1,12 @@
 import { MDXRemote } from "next-mdx-remote";
 import { GetStaticPropsContext, NextPageWithLayout } from "next";
-import { Heading, Flex } from "@chakra-ui/react";
+import { Heading, Flex, Box } from "@chakra-ui/react";
 import { Prose } from "@nikolovlazar/chakra-ui-prose";
 import Layout from "../../components/Layout";
 import { getAllSlugs, getPost, Post as PostMetadata } from "../../lib/writing";
 import { Content } from "../../lib/mdx";
 import { NextSeo } from "next-seo";
+import { TableOfContents } from "../../components/TableOfContents";
 
 interface PostProps {
   post: Content<PostMetadata>;
@@ -25,12 +26,15 @@ const Post: NextPageWithLayout<PostProps> = ({ post }) => {
             : undefined,
         }}
       />
-      <Flex direction="column" gap={2}>
-        <Heading size="lg">{post.metadata.title}</Heading>
-        <Prose>
-          <MDXRemote compiledSource={post.source} scope={{}} frontmatter={{}} />
-        </Prose>
-      </Flex>
+      <Box position="relative">
+        <TableOfContents />
+        <Flex direction="column" gap={2}>
+          <Heading size="lg">{post.metadata.title}</Heading>
+          <Prose>
+            <MDXRemote compiledSource={post.source} scope={{}} frontmatter={{}} />
+          </Prose>
+        </Flex>
+      </Box>
     </>
   );
 };

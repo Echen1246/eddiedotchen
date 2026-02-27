@@ -1,0 +1,579 @@
+---
+title: "A Deep Dive into Robotics"
+description: "A deep dive into robotics."
+date: "February 9, 2026"
+---
+
+## The Overview
+
+I love robots. While not a Mech E. major or done specialized study, I've spent much time tinkering or printing robot or drone parts. I can remember my initial fascination taking off when my father brought home a DJI Phantom 3; it was so bulky compared to my small frame, but the fact that I could maneuver something in the sky and take shots from angles I never imagined pushed me down a rabbit hole. When 3D printing became mainstream, we were able to get a 3D printing machine, and I'd spend hours designing drone add-ons like undercarriages or new propellers to make my Mavic even quieter.
+
+Fast forward a decade plus, a few Mavic models, Avata FPVs, and I'm here now, talking about my love for robotics, derived from drones. The future is truly limitless.
+
+The purpose of this overview is to introduce robots and a surface level of the following sections, before we go in-depth on individual subject matters that make robotics possible.
+
+**The essential question: What are robots?**
+
+Robots are a combination of hardware and software created by humans (for now) to alter the physical world around it and complete arbitrary jobs. The goal of the study of robotics is to better understand how bodies move and are made in order to optimize our artificial bodies.
+
+**Note:**
+Throughout our exploration, there will be frequent Notes in bold, and terms that are highlighted to link to an image or a definition.
+
+## Mechanics of Robots
+
+Hardware is not merely a container for software; it's the robot's first layer of intelligence. In biological systems, the body performs what researchers call "morphological computation": the shape and elasticity of muscles solve control problems before the brain even gets involved. A well-designed body makes the software's job easier. A poorly designed one makes it nearly impossible.
+
+We need to consider several important factors in the mechanics of modern robots: the degrees of freedom for each possible configuration, which encompasses the total configuration space of the entire rigid body. You can apply DoF and configuration space thinking to essentially any rigid object, from a door to a coin.
+
+One of the largest mechanical challenges is small, precise spaces like hands, which require the highest degrees of freedom packed into a very small area. Consider the challenge of exerting enough power in the allowed space, along with room for the motor, frame, actuator, and everything else.
+
+### Kinematics vs. Dynamics: Geometry and Physics
+
+Before diving into individual components, it helps to understand the two lenses we use to think about robotic movement.
+
+**Kinematics** is the geometry of motion.
+
+Forward kinematics is straightforward: "If I set my joint angles to X, where does my hand end up?" That's basic trigonometry. Inverse kinematics is the harder problem: "I want my hand at these coordinates x,y,z, what angles do the joints need to be?" This is computationally expensive, often has multiple valid solutions, and sometimes has none at all.
+
+The bridge between joint movement and end-effector movement is the Jacobian matrix, which maps how fast the joints are spinning to how fast the hand is moving. When this matrix becomes "singular", like when an arm is fully extended, the robot loses the ability to move in certain directions. This causes "lock-up," and it's one of the reasons you see industrial arms doing weird contortions to avoid straightening out completely.
+
+**Dynamics** is where physics enters the picture.
+
+Real robots have mass and inertia. Every movement involves fighting the inertia of the arm (which changes as it extends), dealing with Coriolis forces that pull sideways during rotation, and compensating for gravity's constant downward pull. A rigid robot must fight all of these with high-torque motors. A biological system uses tendons and springs to store this energy, turning gravity and inertia into helpers rather than enemies.
+
+### Components
+
+Robots consist of a set of hardware components, each with its own constraints and tradeoffs:
+
+**Frame**
+
+A collection of rigid bodies connected via joints. The frame must house and accommodate every other component — motors, sensors, wiring, compute. It's the skeleton that everything else hangs on.
+
+**Joints**
+
+Joints allow rigid bodies the freedom to move relative to one another. The simplest joints have 1 degree of freedom (revolute, prismatic, helical). More complex joints offer 2 or 3 degrees of freedom (cylindrical, universal, spherical). The choice of joint type at each connection point cascades through the entire design — it determines the robot's workspace, its reachable configurations, and ultimately what tasks it can perform.
+
+**Actuators**
+
+This is where the core conflict between "robot" design and "natural" design shows up most clearly: stiffness vs. compliance.
+
+The variety of actuator types, to me, reflects an incomplete understanding of the natural body and methods of movement. We're still searching for the right approach.
+
+Hydraulic: Bulky, hard to maintain, and complex — but they exert tremendous force. Fluid is non-compressible, giving near-instant reaction speed (bandwidth). Boston Dynamics' Atlas uses hydraulics for exactly this reason. The downside: they leak and require a central pump, essentially a mechanical "heart."
+
+Electric (BLDC): The standard. Lower cost, more balanced motive power, good control authority. Most industrial robots use small electric motors spinning at ~3,000 RPM connected to massive gearboxes (100:1 reduction) to create torque. The consequence is that the robot becomes "stiff" — it can't feel the world. If it hits a wall, the gearbox absorbs the shock and might break. It needs dedicated force sensors just to know it touched something.
+
+The alternative gaining traction is quasi-direct drive — low-ratio gears (around 6:1), used in modern quadrupeds like MIT's Mini Cheetah. The robot becomes "back-drivable": push its leg and the motor spins freely. It gains proprioception — it can sense the ground simply by monitoring motor current. This is closer to how biological limbs work.
+
+Pneumatic (McKibben Muscles): Much less powerful and notoriously "spongy." They're often dismissed for that reason, but that sponginess (compliance) is actually a feature when operating near humans. They appear to be a best-effort attempt at replicating natural muscle tensing and release. The real difficulty is control: gas is compressible, making precise position control mathematically chaotic.
+
+Series Elastic Actuators (SEA): A physical spring placed between the motor and the joint, mimicking a tendon. It stores energy during impact (like a foot hitting the ground) and releases it for the next step. This enables explosive movement without massive power consumption, the same trick biological systems have been using for millions of years.
+
+Electro Nanotubes: A promising technology still undergoing testing. A variant of carbon nanotubes with a degree of elasticity, allowing them to stretch and contract like natural muscles. Has the potential to give humanoids more explosive power in the future.
+
+**Gearing and Transmission**
+
+Actuators can produce speed and torque that are too high or too low for the intended application. Gears and transmission modify the actuator's output through torque multiplication, speed reduction, and motion translation.
+
+The main types each serve different roles:
+
+Harmonic Drives offer zero-backlash precision for arms and manipulation tasks. Very expensive, very fragile.
+
+Planetary Gears are robust and commonly used in legs.
+
+Cable Drives use steel cables (essentially tendons) to move heavy motors away from the joints; for example, placing motors in the torso to actuate the fingers. This reduces limb inertia, allowing faster movement. It's the same principle behind our own forearms: mostly tendon, with the muscle bulk up near the elbow.
+
+**Power Source**
+
+Lithium-Ion / Li-Po: The standard for mobile robotics due to high energy density.
+
+Tethered: Many research robots stay plugged into the wall. Between heavy compute and sustained actuation, battery life remains one of the hardest unsolved problems in mobile robotics.
+
+**Sensors and Intelligence**
+
+Robots have two modes of sensing, and the current "big data" trend over-indexes on one while ignoring the other.
+
+Exteroception (external sensing): LiDAR, cameras, depth sensors: "Where is the door?" High bandwidth but requires massive compute (CNNs, Transformers). Processing an image takes 30-100ms. Too slow for reflexes or real 'real-time'.
+
+Proprioception (body awareness): IMUs for balance and orientation, encoders for joint angles, torque sensors for feeling how hard the world is pushing back. Latency under 1ms.
+
+Here's the key insight: a human can walk in the dark. What's stopping robots? In my opinion, we don't need vision transformers to balance; we need highly tuned spinal reflexes. Trying to solve walking primarily through vision is computationally wasteful. The proprioceptive foundation has to be solid first.
+
+Beyond sensors, the compute stack includes CPUs, AI chips, and GPUs running ML algorithms for learning from tasks, planning paths, and performing autonomous complex movements.
+
+### The Chain of Command
+
+The overall flow from intent to action:
+
+Command (Software, Intelligence, Wiring) → Actuation (Direct command to move) → Modification (Turns raw force into precise movement, e.g., gearing down a hydraulic for fine manipulation) → Action (Hand can grab, hold, release)
+
+### Form Factor
+
+Modern robots appear in three main form factors: arms, bipeds, and quadrupeds. Each has tradeoffs, and selecting one has downstream consequences for the operating environment.
+
+A concept I think is worth noting: **Morphological Computation**: the idea that the body itself computes. A "Passive Dynamic Walker," a robot with no motors at all, can walk down a slope purely through the pendulum physics of its legs. If we design the body correctly, the software doesn't need to "learn" to walk; walking becomes the natural state. Basic examples are like slinky toys or suction cups in assembly lines. As you can imagine, they're single purpose designs (can a slinky climb a wall?).
+
+This is where the humanoid question gets interesting. We build humanoids because our environment is anthropogenic: stairs, door handles, chairs were all designed for human bodies. Bipedalism makes sense for navigating our world. But biologically, it's unstable and energy-inefficient. Building a humanoid forces us to solve hard control problems (balancing an inverted pendulum) that wouldn't exist if we let form follow function (a hexapod, for instance, is inherently stable).
+
+Here's where we begin the transition to software: each form factor is heavily dependent on data collected from that exact form. Software learns to take actions based on specific joint, sensor, and actuator data. Significant changes in robot hardware render previous software essentially obsolete.
+
+Which leads to the strategic reasoning behind the humanoid push: many companies have decided to develop humanoids because they'll be capable of performing most tasks in the world (generalist task completion), and because of the similarities to the human form, collecting training data through various means like teleoperation, motion capture, and simulation all become easier without constantly altering hardware. The humanoid form factor is as much a data strategy as it is a mechanical one.
+
+## Software of Robots
+
+Software is where most of the progress in robotics has occurred over the past decade, and is the place we must look to understand where the future of robotics is headed.
+
+In this section, we'll focus on the series of innovations that have led us to the current frontier of robotic software.
+
+Then, we'll use this to understand:
+- The limitations of current capabilities
+- What we must accomplish to achieve general-purpose robotics
+
+**Key Idea here is Moravec's Paradox**
+
+Robotic software is responsible for using sensor data and actuators to process the robots' perception, plan actions, and issue control commands.
+
+In this sense, it represents the "brain" of the robot.
+
+We may initially expect that planning is the most difficult of these functions, since it requires high-level reasoning abilities, understanding of environmental context, natural language, and more.
+
+Meanwhile, controlling limbs to grab and manipulate object seems comparatively simple.
+
+In reality, the opposite is the case. Planning is the easiest of these functions and is now largely solved with models like SayCan and RT2 (which we will cover soon), whereas creating effective motor control policies is the main constraint limiting progress today.
+
+**Note:**
+This counter-intuitive difficulty of robotic control is captured in Moravec's paradox:
+
+"Moravec's paradox is the observation in the fields of artificial intelligence and robotics that, contrary to traditional assumptions, reasoning requires very little computation, but sensorimotor and perception skills require enormous computational resources." - Wikipedia
+
+We can see the truth in this in the fact that modern AI systems have long been able to accomplish complex reasoning tasks like beating the best human chess player, and Go player, passing the Turing test, and now being more intelligent than the average human, all while robots consistently fail to perform basic sensorimotor tasks that a 1-year-old human could, like grasping objects and crawling.
+
+Moravec's paradox is not really a paradox; it is instead a direct result of the complexity of the real world.
+
+Tasks that seem simple to us often actually require:
+- Complex multi-step motor routines
+- An intuitive understanding of real world kinematics and dynamics
+- Calibration against variable material frictions
+- Resistance against external disruptive forces
+- etc.
+
+Meanwhile, symbol manipulation is a relatively lower-dimensional and less complex problem, as we have seen with the somewhat recent success of LLMs.
+
+The truth of Moravec's paradox is also reflected in the human brain, which has far more computational resources allocated toward controlling our hands and fingers than the rest of our body (check out images of the cortical homunculus, which show you what the human body would look like if body parts were scaled to a size proportional to the amount of neural compute allocated to them. You can see that the hands are gigantic).
+
+This may also be why motor control feels so easy to us compared to high-level reasoning.
+
+With this context, let's first look at the innovations that have enabled modern robotic perception and planning systems before we dive into the far more complex challenge of robotic control.
+
+### Perception
+
+Robotic perception is concerned with processing sensory data about the robot's environment to understand:
+- The structure of the environment
+- The presence and location of objects in the environment
+- Its own position and orientation within the environment
+
+All of these necessities require the robot to construct an internal representation of its environment that it can update as it explores and reference in its decision-making.
+
+This is exactly the goal of SLAM systems.
+
+**Note:**
+Sensory perception is also a significant part of robotic control since control heavily depends on sensorimotor policies, but we will cover that aspect of perception separately in the control section.
+
+**Breakthrough #1: Early SLAM**
+
+Simultaneous Localization and Mapping (SLAM) systems use robotic sensor data to:
+- Construct a consistent internal representation of the environment (mapping)
+- Understand the robot's position in it (localization).
+
+SLAM systems depend on a combination of LiDAR sensors, cameras, IMUs, and other sensors. They use a technique called sensor fusion to synthesize all this data so it can be used to construct a single map.
+
+**Important:**
+If sensors were perfectly accurate, SLAM could be trivially solved - the robot would be able to understand its exact trajectory and could perfectly construct a map of its environment with point-wise depth data using LiDAR.
+
+The challenge with SLAM comes in the fact that sensors have some error. As the robot navigates the environment, this error slowly accumulates, causing the robot to miscalculate where it has moved (due to slightly inaccurate IMU readings) which then distorts it's understanding of the environment since this shifts the relative position of different points.
+
+SLAM solutions all solve this problem with the following process:
+- As the robot navigates through the environment, it stores the relative positions of points of interest around it.
+- The robot detects when it sees the same point of interest from multiple different perspectives.
+- It uses this data to triangulate the locations of all the different points of interest to reduce errors in localization and mapping.
+- The robot detects correlations between different points of interest over time. As the correlations between points of interest grow, estimated locations become more accurate.
+
+Early SLAM solutions like EKF-SLAM and FastSLAM used purely algorithmic methods like particle filters to construct a map of the environment. However, these solutions often relied on LiDAR sensors. This expensive dependency was prohibitive for mass scale robotics, so the industry had to turn to SLAM solutions that could work with only visual data from cameras.
+
+**Breakthrough #2: Monocular SLAM**
+
+ORB-SLAM represented a major breakthrough by providing a SLAM solution that only depended on a single camera, with no dependence on LiDAR.
+
+Because monocular systems don't have access to point-wise depth data from LiDAR that makes SLAM much easier, they have to estimate relative camera and point positions from visual data alone.
+
+Monocular SLAM solutions accomplish this by detecting image features (like ORB features which pickup on corners), and then triangulating these image features across key-frames using strategies like bundle adjustment and pose graph optimization.
+
+These solutions also started to integrate loop closures where a robot could perform many error corrections and map readjustments every time it returned to the same location (since errors in relative positions between points of interest become obvious).
+
+**Breakthrough #3: SLAM with Deep Learning**
+
+Modern SLAM solutions like DROID-SLAM and NeRF-SLAM (among many others) have started to integrate deep learning into their systems to varying degrees.
+
+However, these deep learning systems don't look like modern internet scale models where they have few priors and rely on massive amounts of data to refine their weights. Instead, they are still primarily algorithm solutions with heavy priors built into their architecture, with deep learning integrated into just a few places.
+
+Notably, ORB-SLAM3 is a purely algorithmic SLAM solution built after ORB-SLAM that still has nearly state-of-the-art performance, indicating that deep learning has yet to offer a significant advantage in robotic perception.
+
+This suggests that the robotic perception problem is structured with a complexity such that a purely deep learning-based solution is unrecoverable given the current scale of data we have and that significant inductive bias is required.
+
+You should also start to notice many of these systems are very creatively named: ORB, DROID, CHOMP.
+
+**Important:**
+The bottom line on robotic perception is that functional monocular SLAM solutions currently exist with loop-closing and the ability to recover from errors. These solutions are still far from the quality of state-of-the-art LiDAR based solutions and have a lot of room for improvement, but are not currently the blocker for deploying humanoid robotics in the world.
+
+**Question:**
+So why does the new Atlas robot use vSLAM (Visual SLAM) instead of LiDAR if LiDAR is superior in mapping and accuracy, especially in low light? Current LiDAR systems are expensive, and bulky, and cameras allow for semantic understanding (detecting what something is, not just where).
+
+### Planning
+
+Robotic planning is about using an understanding of the environment to convert the robot's goals into concrete action plans. Specifically, this consists of path planning, task planning, and motion planning. We will focus on path planning and task planning here, as low-level motion planning is really the job of robotic control.
+
+**Path Planning**
+
+The challenge of robotic path planning is primarily concerned with safety; the robot needs to navigate its environment to a target position without colliding with humans and objects in the environment.
+
+Traditional path-finding algorithms like A* work to find optimal paths in discrete and relatively simple environments, but robots operate in complex environments with continuous configuration spaces (the number of specific trajectories a robot could take from one location to another is near infinite).
+
+To address this challenge, robots have to use random sampling based path planning algorithms like Probabilistic Roadmaps (PRM) and Rapidly-exploring Random Trees to create best-effort trajectory plans that avoid collisions. Then, they can use optimization algorithms like CHOMP to ensure that selected trajectories optimize smoothness in addition to just avoiding collisions.
+
+**Important: Capabilities & Limitations: Path Planning**
+
+Modern path planning systems can effectively generate best-effort trajectories in complex continuous environments. These algorithms are capable of optimizing to avoid collisions and maximize smoothness. Modern algorithms still struggle with path planning in the presence of dynamic objects in the environment (like walking humans).
+
+**Task Planning**
+
+Robotic task planning involves converting the high-level goal of the robot into sub-tasks and eventually individual motor routines to accomplish the goal. This requires an understanding of the robot's environment and the objects within it, the capabilities of the robot, and high-level reasoning abilities to plan within these constraints.
+
+Until a few years ago, task planning systems all used hierarchical symbolic approaches to task planning like hierarchical task networks (HTN), STRIPS and Planning Domain Definition Language (PDDL) which allow roboticists to manually define the domain of valid concepts to reason about.
+
+This worked for simple environments where robots had a limited set of problems to consider (like in industrial cases where robots have a very limited task space) but is not feasible for any general-purpose robotics system where the complexity of environments quickly explodes.
+
+This problem remained unsolved until the recent success of multi-modal LLMs provided access to models with advanced visual and semantic reasoning capabilities.
+
+Recent robotic systems like SayCan and RT2 use these pre-trained VLMs for their reasoning capacities and fine-tune them to understand the capabilities afforded by robotic control systems. This creates effective task planning systems that can direct the robot to accomplish long-horizon tasks and solve reasoning problems that were previously intractable.
+
+**Important: Capabilities & Limitations: Task Planning**
+
+Modern task planning systems have advanced reasoning abilities and are grounded in the realities of actions that the robot can actually perform. These systems have effectively integrated high-level task planning with low-level robotic control to successfully accomplish goal-oriented behavior in complex environments. Robotic task planning can now be considered a relatively solved problem.
+
+### Control
+
+As we've discussed, robotic control is by far the hardest part of building robotic systems due to the incomprehensible complexity of the real world. We are currently far from true generalization in this domain.
+
+Robotic control deals with converting task and action plans from the robot's planning system (ex: "pick up the ball," "open the pack of dates," "walk up the stairs") into actual motor control outputs.
+
+The approach robotic control has gone through 3 major shifts over the past 3 decades:
+1. Classical Control - We initially tried to manually design robotic control policies with our own manually programmed physics models, resembling early efforts in deep learning to accomplish manual feature engineering.
+2. Deep Reinforcement Learning - Driven by progress in deep reinforcement learning in the 2010s after AI systems became adept at games like Atari, Go, and Dota, reinforcement learning algorithms were successfully applied to learn robotic control policies, especially in simulation.
+3. Robotic Transformers - Following recent progress in generative models, transformers trained on internet scale data have now been successfully re-purposed for robotics.
+
+Let's take a look at these major transitions, along with the other important breakthroughs in robotic control that have gotten us to current capabilities.
+
+**Breakthrough #1: Classical Control**
+
+The earliest approaches to robotic control were based in classical control. They involved manual modeling of the kinematics and dynamics of the environment, robot joints, and rigid bodies.
+
+These physics based models usually involved directly modelling forces on objects and using:
+- Forward kinematics and dynamics models that predict the movements that would result from specific motor commands.
+- Inverse kinematics and dynamics models that try to predict in reverse the motor commands necessary to generate desired movement outputs.
+
+Though these models saw some success in simple highly-controlled environments, they quickly fell apart with any variance as the countless un-modeled forces, unpredictable variable frictions of objects, sensor inaccuracies, and other products of real-world complexity quickly generated error and made them ineffective for most complex use cases.
+
+This belief by early roboticists that we could effectively address the complexity of real-world manipulation problems with manual physics models resembles the attempts by early machine learning researchers to solve ML problems with manual feature engineering. Just as these approaches were eventually replaced by deep learning based methods in traditional ML, the same has occurred in robotics.
+
+**Breakthrough #2: Deep Reinforcement Learning (DRL)**
+
+In the early 2010s, progress in deep reinforcement learning quickly exploded after years of slow results. Deep reinforcement algorithms started to show better than human performance on simple games like Atari, and eventually far more complex games like Go and Dota 2. Still waiting on competitive League DRL algorithm to help me hit Challenger.
+
+This progress provided a new direction for improvement for robotics control systems, since robotic control is essentially a reinforcement learning problem: the robot (agent) needs to learn to take actions in an environment (to control its actuators) to maximize reward (effectively executing planned actions). Because of this, roboticists tried to apply the progress in deep reinforcement learning toward robotic control.
+
+**Note:**
+Speaking of reward, I could go on a tangent and link Richard Sutton's Bitter Lesson essay about the plague of complex, engineered, human-centric reward systems that give short term results. The pitfalls of software will affect hardware similarly if we become shortsighted.
+
+This came with several challenges on-top of just naively applying the same DRL algorithms to robotics: while games have explicitly defined rules and discrete state spaces, robots deal with continuous configuration spaces (robot joints can be in one of a near infinite number of specific positions) and highly complex environments where achieving training convergence is challenging.
+
+Deep reinforcement learning algorithms like Trust Region Policy Optimization (TRPO) and Proximal Policy Optimization (PPO) provided a path to good RL training convergence in continuous environments by optimizing training step-sizing (which is particularly challenging with reinforcement learning) and providing optimal reward signals across long-horizon tasks (where robots have to issue thousands of motor commands before they get the reward for completing the task).
+
+These algorithms enabled breakthrough results in simulation where simulated models of quadruped and biped robots learned walking patterns from scratch.
+
+While simulated robots could run thousands of iterations concurrently to learn, training reinforcement learning policies on real world robots was constrained by the inability to collect too many samples, leading to algorithms like Deep Deterministic Policy Gradient (DDPG) and Soft Actor-Critic (SAC) that were more sample efficient due to reusing the same data multiple times.
+
+These algorithms allowed the training of reinforcement learning control policies for real-world robots.
+
+**Breakthrough #3: Simulation**
+
+Progress in deep reinforcement learning for robotics was also driven by the improved usability of simulation software that occurred at the same time.
+
+Training robotic control policies in simulation offers the advantage of parallelization and scale that far exceeds what's possible in reality, due to the ability to scale up training by just increasing the amount of compute dedicated to it (in contrast to reality, where training is constrained by expensive hardware and the speed of real-world interactions).
+
+However, early simulation software was not designed specifically for robotics, and did not have enough accuracy in its contact and rigid body dynamics to generate policies that work in the real world.
+
+In 2012, a group of engineers released MuJoCo, an open-source simulator built specifically with attention to the concerns of robotics, with highly accurate contact and rigid body dynamics calculations. All breakthrough simulation research in robotics afterwards has been conducted in MuJoCo.
+
+Training simulated control policies comes with the challenge of transferring policies from simulation to reality, known as the sim-to-real problem.
+
+Any inaccuracies in the simulation software itself magnify errors in the policy as it is used in the real world. In particular, RL policies trained in simulation often learn to exploit inaccuracies in the simulation to achieve their goal, and then fall apart in the real world where the actual laws of physics prevent these exploits.
+
+These problems were addressed with techniques like Domain Randomization, Dynamics Randomization, and Simulation Optimization where control policies were trained with randomized object textures, lighting conditions, and even laws of physics. This approach helped to make the policies robust against differences between the simulation and reality, allowing the robot to learn a general approach to control that doesn't depend on a specific set of physical conditions and laws, allowing it to generalize to the real world as just another subset of its learned abilities.
+
+All of these advancements were combined into OpenAI's robotic hand which was trained entirely in MuJoCo and demonstrated impressive 5-finger dexterous manipulation abilities with a block.
+
+**Breakthrough #4: End-to-end Learning**
+
+Initially, deep learning based robotic control systems trained their vision and motor components separately, training a vision system to detect relevant information from cameras and pass down latents to a motor control system to act. In such setups, researchers restricted the flow of information between the perception and control systems.
+
+This may have followed from a similar bias as our initial approaches to manual feature engineering in machine learning and hierarchical task planning in robotics, where we tend to prefer nicely structured systems where components can be grouped into understandable functional roles.
+
+However, with the introduction of end-to-end visuomotor policies, roboticists started to jointly train vision and motor control systems together with a single objective, allowing the deep learning systems to tune the flow of information between these systems on their own with no restrictions.
+
+This learning approach was then further validated by BC-Z (Zero-Shot Imitation Learning, 2022), which used end-to-end training to achieve state-of-the-art results in robotic control with a robot that could generalize to unseen tasks.
+
+Now, modern robotic systems are all built in this way, and we can see a broader trend toward training increasingly end-to-end systems where all parts of the robotics problem are trained together with a single objective function.
+
+**Breakthrough #5: Tele-operation + Imitation Learning**
+
+As we made progress with deep reinforcement learning in simulation, it also became clear that to achieve certain types of generalization (like generalization to new objects and environments), we would need to turn to real world data.
+
+To achieve training that could address the richness of real world environments in simulation would require creating a simulation with comparable complexity and variability to the real world, which is clearly intractable.
+
+This motivated the use of imitation learning, where demonstrations could be collected from humans operating real-world robots, known as tele-operation, and then deep learning policies could learn to imitate human behavior.
+
+Algorithms like Behavior Cloning, Inverse Reinforcement Learning (IRL), and Generative Adversarial Imitation Learning (GAIL) represented early approaches at trying to infer control policies from human actions by assuming that human demonstrations represented optimal policies.
+
+However, early attempts at training control policies often lacked sufficient data to recover from unseen scenarios that experts would not show, which motivated the creation of DAgger to help augment the dataset during training with sufficient data.
+
+Then, models like BC-Z used these techniques to demonstrate that training control policies from tele-operation data via imitation learning could be an effective strategy.
+
+Most recently, the development of ALoHa, a low-cost hardware system for tele-operation, has set a standard for relatively cheaply collected real world robotic data for training models.
+
+**Breakthrough #6: Robotic Transformers**
+
+Recent progress in LLMs with the transformer architecture has motivated the use of transformers and internet-scale data in robotics.
+
+Models like Google DeepMind's Robotics Transformer 1 (RT1) showed that a transformer trained on large amounts of image, text, and robotic control data could achieve state-of-the-art results, validating the use of the transformer architecture for robotics.
+
+Then, SayCan and Robotics Transformer 2 (RT2) showed that multi-modal vision-language-models (VLMs) could be fine-tuned to perform robotic planning and control, mirroring the pre-training and fine-tuning paradigm that create the most successful early LLMs like GPT-2 and GPT-3.
+
+RT2 introduce the vision-language-action (VLA) model paradigm which is now the current state-of-the-art in robotic control.
+
+Then, the Action Chunking Transformer (ACT) allowed control policies to predict the next series of actions over multiple time-steps, rather than just a single action, allowing for much smoother and coordinated actuator control.
+
+This use of pre-trained open-source VLMs in robotics is one of the largest contributions to robotics from the recent progress in deep learning, and arguably one of the major reasons that robotics has re-entered the spotlight.
+
+It's hard to overestimate how much value VLMs have brought to robotic planning and reasoning capabilities; this has been a major unlock on the path toward general-purpose robotics.
+
+**Breakthrough #7: Cross-embodiment**
+
+Finally, Physical Intelligence's first robotics foundation model pi0 just introduced another set of impressive architectural and training innovations.
+
+Most notably, they trained their model on data from many different robotics hardware systems (a cross-embodiment dataset), allowing it to generalize to new hardware with a small amount of fine-tuning. This represents an impressive form of generalization which may help to alleviate concerns about making adjustments to robotic hardware over time, and also presents the prospect of a single robotic foundation model which can work across all hardware architectures.
+
+It appears that cross-embodiment may actually improve robotic control by allowing the robot to isolate the relevant aspects of world model dynamics from the specifics of the robot, enabling new levels of generalization.
+
+### Generalization
+
+Now that we've covered the innovations that have led us to the current frontier of robotics, we can evaluate the capabilities of state-of-the-art robots to see [1] how far they generalize and [2] how much farther we will have to go before we achieve general-purpose robots.
+
+Despite all the variety of different approaches to robotics over the past 3 decades, the frontier has now converged to a relatively straightforward approach build around end-to-end training of transformers with internet-scale pre-training data and manually collected tele-operation datasets.
+
+This approach is essentially a combination of the results of RT2 (introduced the VLA) and ACT, with pi0 currently representing the most impressive publicly released model.
+
+These models demonstrate the following generalization capabilities:
+- **Objects** - VLAs have demonstrated high ability to recognize the presence of a variety of objects and understand when they are useful.
+- **Environments** - VLAs can operate in a variety of diverse environments, due to the general visual intelligence abilities of pre-training vision-language models.
+- **Reasoning** - High-level reasoning is close to being a solved problem, with LLMs providing sufficient problem-solving abilities for most real-world tasks.
+- **Hardware** - The cross-embodiment results demonstrated by pi0 indicate that it may be possible to create robotics foundational models that can operate across hardware. However, it's worth noting that pi0 was trained with robots that all used simple graspers, and this approach would likely require a far larger scale of data in order to work on 5-finger manipulators.
+- **Manipulation** - Robots are still far from being able to manipulate most objects. The diversity of ways that we manipulate physical objects is highly complex, and robots have only demonstrated the ability to perform manipulation skills that are directly in their dataset (like grasping and releasing), with little generalization abilities here.
+
+Robotic manipulation is by far the largest barrier to progress right now in terms of how far behind it is compared with other functions.
+
+Robots still struggle with unfamiliar objects, new environments, and unknown control skills. In the next section, we will try to reason about how much data is required to achieve generalization in robotic manipulation.
+
+**Important: State-of-the-art Capabilities**
+
+Current robotic capabilities have gotten to the point where we can:
+- Manually collect a dataset for specific tasks and fine-tune VLA + ACT based models to complete these tasks with relative accuracy and error-correction
+- These systems show moderate generalization to new same-task scenarios but no generalization to new manipulation skills.
+- There are still significant technical challenges on all fronts (perception, planning, locomotion, dexterous manipulation) to get to the reliability and safety necessary for public deployments
+
+Note that we are far from generalization to new manipulation skills, with no indication of any sign of such skills forming with current amounts of data.
+
+**Note:**
+Robotic perception and locomotion still remain somewhat separate from the rest of robotic planning and control. Due to the secrecy of the robotics industry, we don't know exactly how these systems are connected into the overall robot, but it's likely that companies are moving toward end-to-end integration across all modules of the robot.
+
+## Future
+
+With all this context, we can now try to understand how the robotics industry will develop from here.
+
+Over the past few years, billions of dollars of capital have been deployed across companies like Tesla Optimus, Figure, 1x, Physical Intelligence, Skild, and a variety of Chinese companies to achieve the promise of general-purpose robotics. In this section, we'll look at how this arms race will play out by answering the following questions:
+- What is the current technical barrier to developing general-purpose robotics?
+- How will we overcome this technical barrier?
+- What business strategy is required to accomplish this?
+- How long will it take?
+- Who is most likely to win?
+
+**Note:** There have actually been very few companies that have shown real 'proof' of their robotic development; Unitree and several Chinese spinoffs have had various robotic models available for commercial purchase for a while now, while we have seen Boston Dynamics and other competitors in CES, most recently. In my opinion, it's critical for robotics to have real world data collection; it's simply impossible to pre-generate all worldly scenarios to train robots; hence, the first-mover advantage here is real.
+
+### Constraints
+
+We've seen that current capabilities leave much to be desired for general-purpose robotics. It almost feels like every shortcoming is a "major roadblock," which speaks to how much work lies ahead.
+
+The best robots today can pick up new tasks autonomously given manually collected task-specific datasets, but they are far from executing arbitrary tasks on demand, largely due to insufficient manipulation ability, limited sensing, and brittle hardware.
+
+In order to justify the valuations and capital being poured into humanoid robotics, these systems need to generalize to new tasks and environments with full autonomy. Recent hype generated by LLM scaling laws has made people optimistic about similar progress curves in robotics, which is what brought the field back into the spotlight.
+
+But what will it actually take?
+
+Creating a fully autonomous general-purpose robot is now framed as a deep learning problem, so we can turn to the 7 constraints of deep learning progress to evaluate where the bottlenecks are.
+
+The 7 constraints that limit the intelligence of deep learning systems:
+1. Data
+2. Parameters
+3. Optimization & regularization
+4. Architecture
+5. Compute
+6. Compute efficiency
+7. Energy
+
+Let's evaluate how each relates to robotics.
+
+Compute and compute efficiency have been pushed forward by the deep learning industry through high-throughput parallel hardware and optimized software. Frontier AI chips are sufficient for large training runs and improving rapidly with capital from the AI industry. This also means we have enough compute to train models with massive parameter counts; we've seen generative models scale to trillions of parameters. These are not currently constraints for robotics.
+
+Energy has not yet become a constraint for training even the largest generative models, and the industry is already addressing future energy demands through nuclear and other infrastructure investments. Robotics is far from hitting this wall on the training side (though deployed robot energy is another story, more on that below).
+
+Optimization & regularization techniques have been sufficient to train large models for years, as demonstrated by LLMs and other generative systems.
+
+Architecture: With the recent creation of Vision-Language-Action models and the Action Chunking Transformer, it appears we now have architectures capable of producing highly capable autonomous behavior, as demonstrated by pi0 autonomously folding laundry.
+
+All of the above constraints have been substantially lifted by recent AI progress, which is part of what makes general-purpose robotics more feasible now than ever before.
+
+With more data, current state-of-the-art architectures could likely scale up to massive parameter models and display impressive generalization capabilities. We have yet to train a robotics model on anywhere near the scale of data that produced today's LLMs.
+
+The industry consensus is that data is the current constraint limiting progress in robotics. And within the deep learning framework, this is correct: data is the binding bottleneck.
+
+But I want to push on this consensus, because I think it misses something important…
+
+### Hardware is Upstream
+
+The standard narrative goes: we have the compute, we have the architectures, we just need more data. Scale the data and the models will generalize. This reasoning works for LLMs because the internet already existed! Decades of human text generation created a dataset of sufficient scale and diversity. We just had to scrape and clean.
+
+But the reason we don't have enough robotics data isn't just that nobody has collected it yet. It's that the hardware required to collect high-quality, diverse manipulation data barely exists.
+
+Consider the state of play:
+
+**The manipulation gap.** The flagship robotics datasets (pi0's 903M timesteps, RT-1's 130k episodes, BC-Z's 25,877 demonstrations) were almost entirely collected using simple 2-finger graspers with varying degrees of freedom and simplicity (pi0 being more advanced, but will be expanded upon in the next chapter). These represent a substantially easier problem than dexterous 5-finger hands (orders of magnitude easier). We're not just missing more data. We're missing data from hardware that can actually perform the tasks we want to generalize to. You cannot scale your way to dexterous manipulation with data collected from hardware that can't do dexterous manipulation.
+
+**Note:** VLA architectures like pi0 certainly take in the robot state alongside vision and language tokens, so it's not purely vision driven architecture. But our nuance still holds: what VLA models sense are joint-level proprioception, meaning the robot knows where its joints are, how hard it's pushing, etc. This is not the same as contact-level proprioception that enables us to detect if something is slipping out of our hands, texture, shear forces, etc. The fact that we can detect one half of the proprioception need tells us that the software is ready to collect this data, but the hardware is not there to allow robots to sense at the contact level yet, thereby preventing true generalization.
+
+**The sensing gap.** Current VLA models like pi0 do pair vision with proprioceptive data; joint angles, velocities, and torques are fed into the model alongside camera and language inputs. This is a meaningful step, and the architecture is clearly capable of ingesting multimodal sensory data. But the proprioception available from current hardware is joint-level: the robot knows where its elbow and wrist are, how fast they're moving, and how hard the motors are pushing. What it doesn't have is contact-level sensing: pressure distribution across the fingertips, micro-slippage, shear forces, texture. Consider something as simple as picking up an egg. The robot can be trained on hundreds of hours of grasping data and know exactly what joint angles to set (which is actually what these flagship datasets are, hundreds of hours of data on varying elementary level tasks like folding laundry), but if the egg is slightly larger than expected, or wet, or oriented differently, it has no way to detect that at the point of contact. It fails at step one. A human wouldn't even think about this: your fingertips would register the size mismatch and adjust grip force before your brain consciously processed it. That reflexive contact sensing is the signal that's entirely absent from current datasets, not because nobody thought to include it, but because the hardware to capture it at sufficient resolution, durability, and cost doesn't exist yet. The software is ready to consume richer sensory data. The sensors aren't producing it.
+
+**The actuator gap.** A robot built on stiff 100:1 gearboxes physically cannot perform gentle, compliant manipulation. No amount of training data teaches it behaviors its hardware mechanically cannot execute. The stiffness vs. compliance problem we discussed earlier isn't just an engineering preference; it determines what behaviors are learnable at all. Back-drivable, compliant actuators expand the space of trainable skills. Stiff actuators constrain it.
+
+**The power gap.** Battery life directly limits data collection. Many research robots remain tethered to the wall because sustained compute and actuation drain batteries in hours. For deployed robots collecting real-world data (the strategy every company is pursuing), limited runtime means limited data per deployment cycle. But this becomes a throughput AND a distribution problem. A robot tied to a research facility has a hard ceiling on how useful its data can be. It never encounters the unpredictable variation of real environments: different surfaces, lighting, objects, people. The model it trains is fundamentally only prepared for pre-generated scenarios, which is limited to what historically happened or the developers' imagination. Without the ability to explore the world untethered, we're either building complex pipelines to bring real-world data to the robot (which has the same signal limitations as repurposing internet video), or accepting that the model will be brittle outside the lab.
+
+This reframes the problem into: Data is the bottleneck within the current paradigm. Hardware is the bottleneck of the current paradigm.
+
+The reason we need such astronomical amounts of data is partly because the hardware is so limited that models must compensate through brute-force learning for what better hardware would provide naturally. This connects directly to morphological computation: if the body itself solves part of the control problem, the software (and therefore the data) has to solve less.
+
+The industry has converged on "data is the constraint" because data is the lever they can pull right now with existing hardware. But hardware limitations are upstream: they constrain what data can be collected, what tasks can be attempted, and how much each datapoint is actually worth. Better hardware doesn't eliminate the data problem, but it makes the data problem tractable, because each datapoint carries much richer signal.
+
+### What Hardware Progress Looks Like
+
+So what specific improvements would shift the landscape? There are several frontiers, some within reach and some further out.
+
+**Materials engineering.** The actuators we have today are fundamentally limited by the materials they're made from. Electric motors hit thermal limits; hold a static load too long and they overheat, unlike bone which locks in place passively. Carbon nanotube artificial muscles, electroactive polymers, and other soft actuator research could eventually give us actuators with muscle-like force density, compliance, and efficiency. These are still largely in the lab, but they represent a path toward actuators that don't force us to choose between power and compliance.
+
+**Miniaturization.** The hand problem is ultimately a packaging problem: fitting enough degrees of freedom, actuation power, and sensing into a volume the size of a useful hand. Progress in MEMS (micro-electro-mechanical systems), miniaturized force sensors, and compact motor designs all push this forward. Cable-driven designs that move motors to the forearm or torso help, but the long-term goal is actuators small and powerful enough to sit inside the finger itself.
+
+**Tactile sensing.** This may be the single most impactful near-term hardware improvement. Dense tactile sensor arrays on fingertips, capable of measuring pressure distribution, shear forces, texture, and temperature, would transform the quality of manipulation data overnight. Systems like GelSight and BioTac exist but remain expensive, fragile, and low-resolution compared to human skin. Scaling tactile sensing to be cheap, durable, and high-resolution is a materials and manufacturing problem, not a software one.
+
+**Power density.** Better batteries (solid-state, lithium-sulfur) or more efficient actuators directly extend operational time, which directly extends data collection windows. Alternatively, hybrid approaches, like robots that can hot-swap batteries, or operate on wireless charging pads between tasks, could mitigate the problem even without battery breakthroughs.
+
+### Feedback Loops
+
+The relationship between hardware and data isn't linear, but a feedback loop.
+
+Better hardware enables richer data collection (more dexterous manipulation, finer sensing, longer runtimes). Richer data trains better models. Better models expose the next hardware limitation, the thing that's now the weakest link. This drives the next round of hardware improvement.
+
+We're currently stuck in the early stage of this loop, where the hardware is so limited that even our best data collection efforts produce low-signal datasets relative to the complexity of the problem. The inflection point comes when hardware is good enough that data collection becomes the genuine bottleneck: where the robots can do the tasks, they just haven't seen enough examples yet. We're not there.
+
+### Data Scaling (optional read)
+
+With my main gripe out the way, we can now discuss downstream problems with this framing in mind. Let's still look at the data question, because even with better hardware, we'll need enormous amounts of it.
+
+The scale of data required to train current frontier generative models was that of the entire internet. LLM datasets start with petabytes of public internet data and filter down to the highest-signal few terabytes (trillions of tokens). Meanwhile, video models like Sora trained on trillions of tokens still haven't reliably learned the laws of physics, something robotics models will have to excel at. Although I would love to look at Seedance 2.0 (some sample videos have been incredible).
+
+We can consider the relative complexity:
+- Robotics is the most complex deep learning problem today, requiring language understanding, high-level reasoning, vision, physics, and physical manipulation
+- Moravec's paradox tells us the complexity of physical manipulation far surpasses high-level reasoning
+- Generative models trained on trillions of video tokens still fail to understand the nuances of real-world physics
+
+Looking at current state-of-the-art dataset sizes:
+- BC-Z — 25,877 expert demonstrations (125 hours of robot time) across 100 tasks
+- RT-1 — 130k episodes across 700 tasks and 13 robots, collected over 17 months
+- ACT — 30-60 minutes of data per task, ~120,000 total timesteps
+- pi0 — 903M timesteps across 68 tasks
+
+pi0 was trained across 7 distinct robot configurations: single-arm, dual-arm, and mobile manipulators, on approximately 10,000 hours of demonstration data across 68 tasks. This is legitimately diverse and represents the largest robot learning experiment to date. However, every platform in the mix uses parallel jaw grippers or similar low-DoF end effectors. None feature dexterous multi-finger hands. Obviously not a criticism because they're doing very necessary and impressive work, but a spotlight on the limitation of our times. The most complex manipulation comes from dual-arm coordination (two grippers working together), which enables impressive tasks like laundry folding but still represents a fundamentally simpler problem than the kind of dexterous, contact-rich manipulation that general-purpose humanoids will require.
+
+Though it's impossible to predict exactly how much data general-purpose robotics will require, the problem is clearly far more complex than LLMs. Saying we'll need 100x more tokens is likely a large underestimate. We may need hundreds of trillions of tokens or more to approach the generalization needed.
+
+But here's the key insight: the amount of data we need is not independent of the hardware we collect it with. Higher-fidelity hardware (better sensing, more dexterous manipulation, compliant actuators) produces data with more signal per timestep. A robot with dense tactile sensing collecting a single grasp attempt generates orders of magnitude more useful information than a 2-finger gripper with only a camera. Better hardware effectively compresses the data requirement.
+
+To finalize: not all data is created equal. This means the path to general-purpose robotics is not just "collect more data." It's "build better hardware so that less data goes further."
+
+### Data Collection
+
+Even acknowledging the hardware bottleneck, we still need to talk about how to generate data at massive scale. There are three main paths:
+
+**1. Repurposing Internet Data**
+
+One approach is to use the diverse video data available online. Many videos contain humans moving and manipulating objects, which could help infer manipulation priors. Skild claims to have done this to achieve impressive generalization results, but it's likely this approach only improves pre-training.
+
+In reality, robots need data from correct camera angles with precise sensor data matching their hardware. Most video data can't be repurposed within these constraints, and it has to be heavily filtered to find relevant manipulation clips. We've already seen that video models trained on similar data fail to understand physics. This path likely lacks sufficient signal for robotics generalization on its own.
+
+**2. Simulation**
+
+Simulation offers near-unlimited data scale since we can parallelize training with more compute. It also provides reproducibility and allows the use of less sample-efficient but faster training algorithms.
+
+However, simulation can only be as good as the physics it models. Current simulation software lacks the real-world complexity required for true generalization to new environments, objects, and skills. The sim-to-real transfer gap remains significant… and ironically, this gap is also a hardware problem. Simulation fidelity is limited by how well we can model the physical properties of the real robot. Compliant actuators, cable-driven transmissions, and soft contact dynamics are extremely difficult to simulate accurately. The more complex the hardware, the harder it is to simulate, which is a cruel irony since complex hardware is exactly what we need for general-purpose manipulation.
+
+Some researchers have proposed using world models learned by generative AI to create richer simulations. But as we've noted, current frontier models like Sora still don't understand physical interactions well enough to make this viable.
+
+Eric Jang, CTO of 1x, believes advanced simulation will ultimately be necessary for general-purpose robotics, and he makes a strong case. But the reality today is that simulation alone won't get us there. It will likely play a complementary role - useful for pre-training, reinforcement learning on specific skills, and testing, while real-world data remains essential for the final push toward generalization.
+
+**3. Real-World Data**
+
+Given the need to train on the rich complexity of the real world, collecting data from physical deployments seems to be the primary path forward.
+
+Before we have fully autonomous robots (which is exactly what we need the data to build), mixed-autonomy and teleoperation will be the main data collection methods. This is why nearly every robotics company has started with teleoperation or narrow task-specific autonomy; their strategy is to deploy human-operated or semi-autonomous robots in real environments, generate revenue to sustain operations, and use those deployments to collect training data. Such examples can be found in Unitree and Boston Dynamics showcase videos as two leaders in the industry.
+
+The internet-scale datasets that powered frontier generative models were created by network effects playing out over decades, generating trillions of dollars of value. This made it economically feasible to produce data at that scale.
+
+If we tried today to directly spend capital to create a comparable dataset for LLMs from scratch, it seems unlikely we could replicate anything close to the quality and diversity of the internet.
+
+But this is roughly what we're attempting for robotics.
+
+For this strategy to work, deployed robots need to be revenue-generating, or the company needs a reliable and continuous stream of capital. Selecting the right deployment strategy to sustain data collection is critical.
+
+### The Bitter(er) Lesson
+
+This brings us to an essential tension, where we can extrapolate from Rich Sutton's Bitter Lesson and apply it to robotics, but with an important caveat.
+
+The Bitter Lesson argues that general methods leveraging computation (search and learning) ultimately win over approaches that try to encode human knowledge. Applied to robotics, this suggests: don't try to hand-engineer manipulation skills, just scale the data and compute and let the model learn.
+
+But LLMs fundamentally address a different problem from robotics. As stated in our overview, robotics at its core is a junction of rigid bodies working together to alter the physical world. To put it in the words of Prof. Fei-Fei Li, language is a human abstraction of the physical world, and by describing this world through tokens, an unnatural, humanized representation, we logically inherit some loss.
+
+**Note:** Totally interesting caveat here, but there is research on how training with different languages (like Mandarin, a symbolic language) can lead to 30-40% increases in efficiency. Such a variable means language fundamentally shapes what a model can efficiently learn about the physical world. This reinforces the case that token-based representations may be insufficient for robotics… if the language layer introduces variable and unpredictable loss, the models built on top of it are learning a distorted map of physics. The body's own sensory data (proprioception, tactile feedback) doesn't have this problem. Physics doesn't need to be translated into words first.
+
+The Bitter Lesson assumes the bottleneck is always software and data. But in robotics, the bottleneck may be the body itself. You can't learn your way past hardware that physically can't perform the task. You can't sense what your sensors can't detect. You can't scale data quality beyond what your actuators and sensors are capable of producing.
+
+This doesn't mean the Bitter Lesson is wrong for robotics… eventually, with sufficient hardware, scaling data and compute will likely dominate. But it does mean the lesson has a prerequisite that the AI industry hasn't had to reckon with until now: the compute has to be embodied, and the body has to be good enough for the scaling to work.
+
+The companies that win general-purpose robotics won't just be the ones with the most data or the best models. They'll be the ones that close the hardware gap first: building hands that can actually manipulate, sensors that can actually feel, and actuators that can actually comply, so that when they do scale data collection, every datapoint counts.
+
+Thanks for reading. Feel free to reach out at echen1246@gmail.com for more questions or answers.
