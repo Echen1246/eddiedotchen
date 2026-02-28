@@ -6,7 +6,6 @@ import Layout from "../../components/Layout";
 import { getAllSlugs, getPost, Post as PostMetadata } from "../../lib/writing";
 import { Content } from "../../lib/mdx";
 import { NextSeo } from "next-seo";
-import { TableOfContents } from "../../components/TableOfContents";
 
 interface PostProps {
   post: Content<PostMetadata>;
@@ -26,8 +25,7 @@ const Post: NextPageWithLayout<PostProps> = ({ post }) => {
             : undefined,
         }}
       />
-      <Box position="relative">
-        <TableOfContents />
+      <Box fontSize="0.91em">
         <Flex direction="column" gap={2}>
           <Heading size="lg">{post.metadata.title}</Heading>
           <Prose>
