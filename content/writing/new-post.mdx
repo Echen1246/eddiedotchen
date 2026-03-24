@@ -1,0 +1,33 @@
+---
+title: "Mini: What 10 Years of Clash of Clans Taught Me About AI"
+description: "Random thoughts on why a mobile game is harder for AI than most benchmarks."
+date: "March 18, 2026"
+---
+
+Random thoughts, revision in progress.
+
+I think a better method of showing an AI's capability to be independent and act as a decision maker lies not within specific, subject matter expert knowledge, but by benchmarking a model's behavior in sandboxed scenarios. Lemme explain.
+
+I've played Clash of Clans for over 10 years now, and occasionally rank within the top 1000 globally (free to play by the way). We can think of a game like Clash of Clans as a sandboxed world, but perhaps better for AI: there still resembles a linear path to success.
+
+So while 2-starring an opponent's base, I couldn't help but think: Isn't it possible to deploy a model to play the game for me? What if it could learn the game from the ground up…. the tutorials, how to attack, waiting for upgrades to finish, learning army compositions and attack strategies? I'd say this is AGI-equivalent. For a model to not only be embedded inside the world itself in full immersion, but also to learn these broad, non-linear strategies on attack and defense, where there lies a clear goal (3 stars for attack, anti-3 stars for defense), is a clear jump from current AI capabilities.
+
+So I'm thinking: why isn't this possible right now?
+
+**The access problem.** For me at least, as a player, not a developer, I can't just embed a model into the game. I could build a simulation, but recreating Clash's troop pathing, building interactions, physics, it's just not possible for me. And sim-to-real transfer is notoriously unreliable (Tobin et al., 2017). Models trained in simulation rarely generalize cleanly to the real thing.
+
+But let's say Supercell just gave me access to their core repo. Now what? I'm still missing several key pieces, and these pieces are key questions the broader industry is still trying to solve.
+
+**The state problem.** IMO, this is the biggest one for me. Current state management with models depends on JSON and other text formats that feed a model "snapshots" of the situation. It's like thinking through screenshots being taken every other second. The latency, knowledge/time lag and gaps, means this just isn't going to work for making these real-time decisions.
+
+Humans maintain continuous, persistent state. We see dragons flying, predict their pathing, notice the air sweeper turning, all in real-time and in parallel. LLMs are stateless by design. Each forward pass is independent. Context windows aren't the same as persistent world state; this is the world model problem (Ha & Schmidhuber, 2018; LeCun's JEPA, 2022). It's unsolved for now, but is relevant to Yann LeCun's world model startup.
+
+**There's a credit assignment problem (RLHF).** A Clash attack is up to 3 minutes long… You have to make dozens of micro-decisions like troop placement, spell timing, heroes, etc. At the end, you get one signal: 0, 1, 2, or 3 stars. Which decision mattered? The funnel? The hero dive? The cleanup? RL is proven to choke on this: long horizons with sparse rewards and massive state space (Sutton & Barto, 2018). The attacks that pro players develop, and even amateurs like me, come from years of experience that build micro-intuitions about the world.
+
+**Finally, the control problem.** You don't even control your troops directly. You drop them, and they path on their own. Part of the skill is predicting how your own units will behave. I can remember countless attacks where my AQ ends up attacking a wall, causing me to time-fail. You're playing against the opponent's base and your own agents' decision-making. Even AlphaStar, with thousands of years of simulated play and direct engine access (Vinyals et al., 2019), had exploitable blind spots.
+
+The point is, I think Clash is a microcosm of what makes real-world AI hard: the continuous state, real-time decisions, long-horizon planning + sparse feedback + adversarial adaptation, imperfect control. This is why robotics is hard, and why driving is hard, and why AGI isn't just scaling transformers.
+
+What I thought would be a simple problem: a mobile game, not chess or Go, turns out to be harder than the benchmarks we publish papers on. We solved games with discrete states and perfect information, but we haven't solved games where you drop troops and pray they path correctly.
+
+When an AI can 3-star my base, I'll retire for good but we're not even close.
