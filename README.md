@@ -1,6 +1,6 @@
 # Eddie Chen's Personal Website
 
-My personal website built with Next.js, Chakra UI, and MDX.
+Personal website built with Next.js, Chakra UI, and MDX.
 
 ## Features
 
