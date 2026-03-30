@@ -17,9 +17,13 @@ It turns out that running AI processes are very complex. When LLMs generate text
 As conversations grow longer, this cache grows, by a lot. A model with 1 million token context needs to store millions more of these KV pairs. **So where does this KV cache live?** Not on an SSD or database, but actually in GPU memory (VRAM) during inference, for the length of our request.
 
 ```
------
-We ask: “What’s the capital of France?” → The GPU loads model weights (various GB depending on model, these are permanent and stored on disk) → Model processes these tokens and builds a KV cache in VRAM (this is temporary, per-request) → The GPU outputs “Paris” and the KV cache is discarded (Gone, memory is free!)
------
+We ask: “What’s the capital of France?”
+→ The GPU loads model weights
+  (various GB depending on model, these are permanent and stored on disk)
+→ Model processes these tokens and builds a KV cache in VRAM
+  (this is temporary, per-request)
+→ The GPU outputs “Paris” and the KV cache is discarded
+  (Gone, memory is free!)
 ```
 
 The KV cache is ephemeral, only existing while our request is processed, and every request starts fresh. If you’ve read previous posts, you understand why I describe LLMs as ‘stateless’, because there is no actual ‘memory’ for each AI. It’s all basically numbers in, words out.
@@ -122,9 +126,25 @@ Lets take a small example for QJL, for 1 Coordinate. If the True value is v=0.23
 
 Now, for actual dot products, QJL doesn’t reconstruct the vector, but directly estimates the dot product correction.
 
-Let e_K = error in quantized K, and Q = the query vector (full precision). The correction term is correction = Q * e_K. If we knew e_K precisely, we could just compute this, but we only have the SIGN of e_K…..
+Let e_K = error in quantized K, and Q = the query vector (full precision). The correction term is:
 
-The estimator we use is correction_estimate = y * Σ qi * sign(ei), where y = expected magnitude of error (known from distribution). Why is this unbiased? We look at one term: E[qᵢ × sign(eᵢ)] = qᵢ × E[sign(eᵢ)]
+```
+correction = Q * e_K
+```
+
+If we knew e_K precisely, we could just compute this, but we only have the SIGN of e_K…..
+
+The estimator we use is:
+
+```
+correction_estimate = y * Σ qi * sign(ei)
+```
+
+where y = expected magnitude of error (known from distribution). Why is this unbiased? We look at one term:
+
+```
+E[qᵢ × sign(eᵢ)] = qᵢ × E[sign(eᵢ)]
+```
 
 **What is E[sign(ei)]?** Logically, if the error ei is symmetric around zero (positive, negative equally likely), the E[sign(ei)] = 0. Would be useless. But, conditioned on the quantized value, the error is actually NOT symmetric.
 
@@ -138,7 +158,11 @@ The clever part comes in: The quantization process is deterministic when given t
 
 When we compute ei, the expected sign is proportional to the error! So we have:
 
-E[γ × qᵢ × sign(eᵢ)] = qᵢ × eᵢ, which is the correction term we need.
+```
+E[γ × qᵢ × sign(eᵢ)] = qᵢ × eᵢ
+```
+
+which is the correction term we need.
 
 If you skipped here, you just need to know that the sign bits encode JUST enough info about the error direction to cancel the bias from Stage 1.
 
