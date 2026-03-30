@@ -1,0 +1,153 @@
+---
+title: "On: TurboQuant and KV Compression"
+description: "A breakdown and .ipynb implementation of TurboQuant"
+date: "March 28, 2026"
+---
+
+Google DeepMind recently released a paper titled: TurboQuant: Services and Software for Ultra-fast Quantization of LLMs
+
+## Context
+
+Basically, it’s a discovery that reduces KV cache memory usage by 6x and improves efficiency by 8x. Sounds incredible, so I want to go over their paper. In a very Twitter-esque way of thinking, it seems everything once again just boils down to compression, prediction, and Kolmogorov complexity.
+
+**We’ll start at the very beginning: What problem does TurboQuant solve?**
+
+It turns out that running AI processes are very complex. When LLMs generate text, they don’t just look at your question and spit out an answer; it builds up a ‘memory’ of the conversation as it goes. All tokens that are processed need to be stored as a Key and a Value, hence the term KV cache. A key is ‘what is this token about’ and a value is ‘what does this token mean’; a pair of both essentially gives the LLM the info it needs.
+
+As conversations grow longer, this cache grows, by a lot. A model with 1 million token context needs to store millions more of these KV pairs. **So where does this KV cache live?** Not on an SSD or database, but actually in GPU memory (VRAM) during inference, for the length of our request.
+
+```
+-----
+We ask: “What’s the capital of France?” → The GPU loads model weights (various GB depending on model, these are permanent and stored on disk) → Model processes these tokens and builds a KV cache in VRAM (this is temporary, per-request) → The GPU outputs “Paris” and the KV cache is discarded (Gone, memory is free!)
+-----
+```
+
+The KV cache is ephemeral, only existing while our request is processed, and every request starts fresh. If you’ve read previous posts, you understand why I describe LLMs as ‘stateless’, because there is no actual ‘memory’ for each AI. It’s all basically numbers in, words out.
+
+**So you’re saying, there's no actual memory per user?**
+
+Right. At the infra level, there’s no KV cache that belongs to me on a disk somewhere. The only way the model ‘remembers’ the last conversation is unless a system like Claude actually saves summaries and injects them into the next prompt.
+
+**So if every KV cache is deleted, why does it eat GPU memory?**
+
+We can do the math for a 70B model with a single user. Assuming 80 layers, 8192 hidden dim, 128k context window, this means 1key vector and value vector is each 8192 numbers, across all 80 layers. At 16-bit precision (2-bytes per number):
+
+- Per token: 2 vectors × 8192 dims × 80 layers × 2 bytes = 2.6 MB
+- 128k tokens: 2.6 MB × 128,000 = 333 GB
+
+This comes out to 333GB for the KV cache. The model weights themselves only come out to 140GB ish. Meaning, if we fill up the entire context window for a single conversation, we literally hit an out of memory error for a H100 GPU (higher-end GPU used for inference). Meaning: long context convos are expensive and need multiple big GPUs to handle them. Multiply that by all your users, and this is why TurboQuant matters.
+
+Before getting technical with the paper, we want to ask a few more useful questions:
+
+**Does AI get dumber with the KV cache size?**
+
+Not really. But models definitely get slower: every time the model generates new tokens, it needs to attend to the entire KV cache. Then, if the cache doesn’t fit in VRAM, we need to do tricks like offload to CPU, paginate, etc, all of which are slow. Finally, batching suffers. GPUs are efficient when many requests are batched together. But if each request has a large cache, we can logically fit fewer requests per batch, and throughput drops.
+
+**How does batching work?**
+
+This is how real-world AI is served. While individual developers can have their own singular GPU or computer for their own model, enterprise AI companies must serve multiple customers using batching:
+
+- User A: "What's 2+2?"
+- User B: "Translate this to French..."
+- User C: "Write me a poem about..."
+
+The GPU batches them together, processes in parallel, each having their own KV cache. Each cache may be different sizes, but the key idea is that all these different caches share the same VRAM limit. If 1 user has a 100k token conversation, the GPU may only be able to fit 2 users instead of the ideal 10, tanking throughput.
+
+This serves as a prologue for what GPUs are used for, KV caches, etc, so now we can talk about the details.
+
+Knowing that the vectors are essentially taking up all the space (Key and value vectors), by shrinking the size of vectors, we shrink the cache, meaning more GPU efficiency. There do exist many methods for ‘shrinking’ cache sizes, like storing fewer tokens (remember the last 10k tokens), dropping layers, dropping dimensions, and even sparsity (storing important tokens only, but technically difficult), but ALL of these methods, except sparsity, hurt model quality. We also can’t carelessly round numbers; the end goal of preserving these vectors is for their dot product (Q * K). Any variety in dot product means our output is messed up.
+
+Broadly speaking, the goal of TurboQuant is to take the individual vectors from the input, which are random and unpredictable, and rotate all of them by the same random matrix, turning their statistical properties predictable (their distribution). This then means we can predictably quantize and uncompress them later on. Meaning, TurboQuant is not a new model training technique, or a weight compressor, but a vector quantization algorithm.
+
+The main idea is that current mean-squared error, or MSE-optimal quantizers, result in vectors that are close to the originals on average. But, they have a pattern of bias; by continuously computing dot products, this error accumulates.
+
+**Note:** We could always quantize super small, even to 1 bit. 16x compression from
+
+```
+[0.234, -0.876, 0.451, 0.892, -0.123] → [+1, -1, +1, +1, -1]
+```
+
+(just the signs)
+
+But the reconstructed values are garbage → dot products are garbage → model spews garbage. Meaning, the accuracy of quantization is the bottleneck; going to 1 bit literally tells us no information (it’s just the positive, negative signs). But now, TurboQuant makes it possible to round to lower bits than before while maintaining accuracy.
+
+**So why use MSE if it’s biased?**
+
+The DeepMind team specifically uses the Lloyd-Max MSE quantizer, a classic algorithm for MSE-optimal scalar quantization. It’s generally really good at compression and minimizes reconstruction error. We just have to deal with the bias as a second-order effect. So all in all, we understand that:
+
+1. MSE quantization (Lloyd-Max) is good at compression,
+2. But it’s biased for dot products, and
+3. TurboQuant uses MSE anyways, but then fixes the bias with a QJL technique.
+
+TurboQuant solves this systematic bias through splitting the compression budget into 2 stages:
+
+## Rotation + Beta Distribution
+
+The input vector is multiplied by a random orthogonal matrix, which was generated from a QR decomposition of a Gaussian matrix. This rotation causes each coordinate to follow a concentrated Beta distribution.
+
+**QR decomposition:** We need a random orthogonal matrix, right? First, we generate a matrix of random Gaussian numbers. We then apply QR decomposition (factors any matrix into QxR where Q is orthogonal), and we keep Q, throw away R. This results in a random orthogonal matrix, our goal.
+
+**Beta distribution** is a probability distribution bounded between 0 and 1, and its shape depends on 2 parameters; for TurboQuant, after rotation, each coordinate when normalized follows a Beta distribution. In high dimensions (d = 128, etc), this distribution is tightly concentrated, where most values cluster near the center. The paper says it’s well-approximated by Gaussian N(0, 1/d), meaning the Mean:0 and Variance:1/d (very small when d is large). Basically, after rotation, each coordinate is a small number close to 0 with predictable spreads.
+
+This means that if we know the distribution in advance, we can precompute the optimal Lloyd-Max codebook. If we didn’t rotate, Coordinate 1 could be anything, Coordinate 2 could be anything. We have to measure statistics per vector; this causes overhead. After rotation, we know Coordinate 1: ~N(0, 1/d) and Coordinate 2 is ~N(0, 1/d). Same distribution for all, much less to no overhead.
+
+Finally, we have a near-independence quality. After random rotation in high dims, coordinates become approximately independent; Coordinate 1 tells us nothing about Coordinate 2, and so on. We can then quantize each coordinate separately, meaning no complex, slow join quantization mechanics.
+
+As a side note, what seems counter intuitive is that individual (scalar) quantization is faster than vector quantization; this is only the case because we created this ‘near-independence’ variable. Vector quantization behaves like this through trained codebooks: Since Coordinate 1 was large, Coordinate 2 should tend to be small. The joint quantizer will then logically allocate fewer bits to Coordinate 2, right? The rotation destroys these exploitable structures, causing joint quantization to give no advantage over scalar quantization; we’d just be paying for extra complexity for nothing (Coordinates are now random, can’t predict next Coordinate based on previous Coordinate). Scalar quantization is also faster here: We have Coordinate 1 → lookup table → code happening with all 127 other Coordinates in parallel. Joint quantization would require sequential decisions because as mentioned before, it needs to load a learned codebook to allocate bits intelligently, step-by-step.
+
+So with the end of Stage 1, we have great compression with low MSE, but still have a bit of bias, albeit predictable.
+
+## QJL Residual Correction
+
+TurboQuant needs to use a small, residual amount of compression power (1-bit) to apply the QJL algorithm to fix the tiny amount of error left over previously. This stage acts as a mathematical error-checker to eliminate bias; QJL acts to compress this small bias to 1 bit per dimension and uses it to debias the final estimate.
+
+The Johnson-Lindenstrauss lemma says: random projections preserve distances. QJL (1-bit Quantized Johnson-Lindenstrauss) goes even further to say: if we quantize the projection to just 1 bit (the sign alone), we can still get useful info.
+
+**Review: First, what’s the residual error?** After our Stage 1, with Lloyd-Max quantization, we have a brief example:
+
+```
+original (rotated): v = [0.234, -0.187, 0.156, ...]
+quantized: q = [0.250, -0.200, 0.150, ...]
+error: e = [−0.016, +0.013, +0.006, ...]
+```
+
+If the quantization errors have some kind of bias, like regularly rounding down, the estimated dot products will be too lw; over time, accumulating.
+
+We need an unbiased estimator. Meaning, E[Estimated] = True. The estimate might be noisy, but on average, this equals the true value. We want noise to cancel out over many computations.
+
+Lets take a small example for QJL, for 1 Coordinate. If the True value is v=0.234, but was quantized to q=0.250, the error is e= v - q = -0.016. Now, when we reconstruct, instead of using q, we can estimate using the signage:
+
+- If sign(e) is negative: the true value is somewhere in [lower_bound, q]
+- If sign(e) is positive: true value is somewhere in [q, upper_bound]
+
+Now, for actual dot products, QJL doesn’t reconstruct the vector, but directly estimates the dot product correction.
+
+Let e_K = error in quantized K, and Q = the query vector (full precision). The correction term is correction = Q * e_K. If we knew e_K precisely, we could just compute this, but we only have the SIGN of e_K…..
+
+The estimator we use is correction_estimate = y * Σ qi * sign(ei), where y = expected magnitude of error (known from distribution). Why is this unbiased? We look at one term: E[qᵢ × sign(eᵢ)] = qᵢ × E[sign(eᵢ)]
+
+**What is E[sign(ei)]?** Logically, if the error ei is symmetric around zero (positive, negative equally likely), the E[sign(ei)] = 0. Would be useless. But, conditioned on the quantized value, the error is actually NOT symmetric.
+
+- If qᵢ > 0 and got rounded up: True value was below quantized, error is negative, sign(eᵢ) = -1
+- If qᵢ > 0 and got rounded down: true value was above quantized, error is positive, sign(eᵢ) = +1
+
+The clever part comes in: The quantization process is deterministic when given the input. TurboQuant, however, adds a small random dither before quantizing: quantized = round(v + small_random_noise), which randomizes which way the rounding goes. Now:
+
+- P(sign(eᵢ) = +1) is proportional to how close v was to the upper boundary
+- P(sign(eᵢ) = -1) is proportional to how close v was to the lower boundary
+
+When we compute ei, the expected sign is proportional to the error! So we have:
+
+E[γ × qᵢ × sign(eᵢ)] = qᵢ × eᵢ, which is the correction term we need.
+
+If you skipped here, you just need to know that the sign bits encode JUST enough info about the error direction to cancel the bias from Stage 1.
+
+Theoretically, Shannon’s source coding theory gives us hard limits. For any compression strategy, theres a minimum distortion we must have for a given bit budget; we can’t beat physics. If the theoretical minimum error is e, TurboQuant achieves at most 2.7e. We could do better with the PERFECT algorithm, but not by a lot; we’re already getting close to the ceiling.
+
+The experimental results show that for our KV cache quantization, we achieve ABSOLUTE quality neutrality with 3.5 bits per channel, and marginal quality degradation with 2.5 bits per channel. Meaning, we retain perfect quality at 3.5 bits, and tiny degradation at 2.5 bits.
+
+The DeepMind team goes on to use a variety of benchmarks, including LongBench, NIAH, RULER, etc using open-source LLMs, Gemma and Mistral.
+
+On Nvidia H100s, 4-bit TurboQuant gives us up to 8x speedup in attention logit computation. Currently, the only comparable is Nvidia’s KVTC method, which provides up to 20x compression (with ~1% accuracy loss), but we would need to calibrate per model. TurboQuant works out-the-box with cache compression.
+
+We’ve hit the end of this breakdown; below, I’m linking a custom implementation of TurboQuant with an open-weight model to test performance myself.
