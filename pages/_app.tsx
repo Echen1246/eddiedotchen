@@ -8,6 +8,7 @@ import posthog from "posthog-js";
 import React from "react";
 import { useRouter } from "next/router";
 import { Lora } from "@next/font/google";
+import { Analytics } from "@vercel/analytics/react";
 
 const lora = Lora({ subsets: ["latin"], display: "swap" });
 
@@ -72,6 +73,7 @@ export default function App({ Component, pageProps }: AppProps) {
         }}
       />
       {getLayout(<Component {...pageProps} />)}
+      <Analytics />
     </ChakraProvider>
   );
 }
