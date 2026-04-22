@@ -20,6 +20,11 @@
     "url": "https://space3--nanochat-serve-chat.modal.run/"
   },
   {
+    "title": "systolic matrices",
+    "description": "Quick visualization for learning systolic matrices for TPU MXUs",
+    "url": "https://systolic.vercel.app/"
+  },
+  {
     "title": "Melo",
     "description": "ML-powered dermatology triage achieving 97% accuracy (HackTech 2025)",
     "url": "https://www.mymelo.org/"
