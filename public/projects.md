@@ -28,14 +28,14 @@ ML-powered dermatology triage reaching 95% recall for melanoma (HackTech 2025). 
 Beginner project. Simple PDF toolkit for merging, splitting, and converting documents.
 - https://www.atomicpdf.org/
 
-## For fun projects
+## For fun
 
 ### codeafk
 Agent harness CLI that keeps Codex and Cursor CLI working while you're AFK. Drive sessions from Telegram or Discord on your phone, approve shell commands remotely, and review code changes as `.diff` / `.html` files. Local-only — no hosted relay, no web dashboard, no account system; runs entirely on your laptop. Published on npm as `codeafk`.
 - https://github.com/0x3ddie/codeafk
 - https://www.npmjs.com/package/codeafk
 
-### Chronicle Atlas
+### Sid Meier Civ 7
 Source-backed map of human history from 12,000 BCE to 1899. Scroll through time to see what else was happening in the world at once; every territory and archaeological site links back to its source and uncertainty note. Built on Cliopatria polity reconstructions and Wikidata-backed site records.
 - https://atlas.eddiechen.workers.dev/
 

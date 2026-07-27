@@ -14,10 +14,6 @@ https://eddiechen.xyz/writing/india-ai-value-chain
 *March 28, 2026* — A breakdown and `.ipynb` implementation of TurboQuant.
 https://eddiechen.xyz/writing/turboquant-kv-compression
 
-## Mini: What 10 Years of Clash of Clans Taught Me About AI
-*March 18, 2026* — Random thoughts on why a mobile game is harder for AI than most benchmarks.
-https://eddiechen.xyz/writing/clash-of-clans-ai
-
 ## Mini: Economics of War
 *March 2, 2026* — Notes on the economics of war.
 https://eddiechen.xyz/writing/economics-of-war

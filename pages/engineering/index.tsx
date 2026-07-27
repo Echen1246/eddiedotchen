@@ -15,7 +15,7 @@ import { NextSeo } from "next-seo";
 // without a category still shows up somewhere.
 const SECTIONS: { label: string; matches: (build: Build) => boolean }[] = [
   { label: "personal projects", matches: (build) => build.category !== "fun" },
-  { label: "for fun projects", matches: (build) => build.category === "fun" },
+  { label: "for fun", matches: (build) => build.category === "fun" },
 ];
 
 interface EngineeringProps {
@@ -68,7 +68,12 @@ const Engineering: NextPageWithLayout<EngineeringProps> = ({ builds }) => {
 
           return (
             <Stack width="100%" key={label} mb={6}>
-              <Heading as="h2" size="lg" mb="0px !important">
+              <Heading
+                as="h2"
+                fontSize="xs"
+                color="gray.500"
+                mb="0px !important"
+              >
                 {label}
               </Heading>
               <BuildList builds={sectionBuilds} />

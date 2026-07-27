@@ -33,7 +33,9 @@ async function writing() {
       })
   );
 
-  metadata.push(...posts);
+  // `hidden: true` in a post's frontmatter keeps the .mdx in the repo but drops
+  // it from the index, which is what the listing, routes, and sitemap read.
+  metadata.push(...posts.filter((post) => post.hidden !== true));
   metadata.push(...external);
   metadata.sort((a, b) => {
     const dateA = new Date(a.date);
