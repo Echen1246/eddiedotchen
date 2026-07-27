@@ -35,7 +35,7 @@ Agent harness CLI that keeps Codex and Cursor CLI working while you're AFK. Driv
 - https://github.com/0x3ddie/codeafk
 - https://www.npmjs.com/package/codeafk
 
-### Sid Meier Civ 7
+### eddie's civ 7
 Source-backed map of human history from 12,000 BCE to 1899. Scroll through time to see what else was happening in the world at once; every territory and archaeological site links back to its source and uncertainty note. Built on Cliopatria polity reconstructions and Wikidata-backed site records.
 - https://atlas.eddiechen.workers.dev/
 
