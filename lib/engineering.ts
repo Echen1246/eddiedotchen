@@ -2,8 +2,11 @@ import path from "path";
 import fs from "fs";
 import { getMdxContent, MaybeContent } from "./mdx";
 
+export type BuildCategory = "personal" | "fun";
+
 export interface Build {
   title: string;
+  category?: BuildCategory;
   description: string;
   image: string;
   date: string;
