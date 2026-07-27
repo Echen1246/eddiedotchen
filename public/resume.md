@@ -7,40 +7,23 @@ Canonical PDF: https://eddiechen.xyz/Edward-Chen-Resume.pdf
 
 ---
 
-## Education
-
-**Arizona State University** — August 2023 to present
-BS Data Science, BA Supply Chain Management, Minor in Economics. GPA: 3.7.
-
-Coursework: Data Structures, Operating Systems, Computer Vision, Networking, Machine Learning, Linear Algebra.
-
-Activities: Scholars of Finance, Association for Computing Machinery.
-
----
-
 ## Projects
 
 ### KV-Cache Compression for Transformer Inference — `local-turboquant`
 *PyTorch, Modal, Transformers, CUDA, Triton*
 
-- Reproduced an unpublished ICLR 2026 paper from scratch and shipped it as a working library before the authors released code. One-line API, Python wrapper, and a CLI exposing per-generation savings, throughput, and freed VRAM. Benchmarked on H100s via Modal.
-- Wrote a fused Triton attention kernel that runs directly on bit-packed 3-bit KV indices without decompressing to FP16, achieving ~74% KV cache memory reduction at near-lossless quality.
+- Reproduced an unpublished ICLR 2026 paper from scratch and shipped it as a working library before the authors released code. One-line API, wrapper, and a CLI exposing per-generation savings, throughput, and freed VRAM. Benchmarked on H100s via Modal.
+- Wrote a fused Triton attention kernel that runs directly on bit-packed 3-bit KV indices without decompressing to FP16, achieving 74% KV cache memory reduction at near-lossless quality.
 
 Repo: https://github.com/0x3ddie/local-turboquant
 
 ### Modified Transformer Architecture — `smarternano`
 *PyTorch, CUDA, OpenRouter, Transformers*
 
-- Re-engineered the nanochat architecture with custom layer depth and weight initialization, re-trained on Nvidia's Nemotron Nano dataset; the project was publicly recognized by Andrej Karpathy.
+- Re-engineered the nanochat architecture with custom layer depth and weight initialization, re-trained on Nvidia's Nemotron Nano dataset; publicly recognized by Andrej Karpathy.
 - Built a synthetic data generation pipeline via OpenRouter to align the model's personality, achieving coherence comparable to 560M parameter models.
 
 Demo: https://space3--nanochat-serve-chat.modal.run/
-
-### Wasm Runtime and Compiler — `silicon-JIT`
-*Rust, ARM64 Assembly*
-
-- Engineered a WebAssembly runtime in Rust that executes C/Rust programs on Apple Silicon, with a JIT compiler translating bytecode to native ARM64 machine code.
-- Managed executable memory via manual `mmap`/`mprotect` syscalls for direct code generation.
 
 ### AI-Native App — `murmur`
 *ONNX, Flutter, AI Engineering*
@@ -52,14 +35,31 @@ App: https://play.google.com/apps/testing/com.nonchalant.murmur
 
 ---
 
+## Education
+
+**Arizona State University** — August 2023 to present
+BS Data Science, BA Supply Chain Management, Minor in Economics. GPA: 3.7.
+
+Coursework: Data Structures, Operating Systems, Computer Vision, Deep Learning, Machine Learning, Linear Algebra.
+
+Activities: Scholars of Finance, Association for Computing Machinery.
+
+---
+
 ## Experience
 
-### mymelo.org — Co-Founder, ML Engineer
-*April 2025 to present*
+### Age of Learning — Data Engineer Intern, AI/ML Systems
+*June 2026 to present*
 
-- Trained and deployed an EfficientNet-B0 CNN on 30K dermoscopy samples achieving 95% diagnostic accuracy, serving inference via AWS Lambda with an S3-backed data pipeline.
-- Built a cross-platform mobile app in Flutter with OAuth integration, conducting 50+ user interviews to iterate on UX for clinical deployment.
-- Engineered a scalable data pipeline using AWS S3 and Lambda to support a high-volume image processing workflow for model inference and data archival.
+- Built a production agentic AI monitoring pipeline for 6 core stakeholder-facing Omni reports, using Snowflake Cortex, custom tool-calling agents, and directed post-training to identify anomalous report runs with 90% recall.
+- Extended report-specific agents to investigate related GitLab merge requests, map anomalous metrics to likely code owners, and route incident summaries to engineering teams through a custom Slack MCP workflow.
+- Engineered a next-activity recommendation system for ranking personalized learning activities after lesson completion, improving learner continuation rate by 20% while preserving learning requirements.
+
+### mymelo.org — Co-Founder, ML Engineer
+*April 2025 to June 2026*
+
+- Won Caltech HackTech 2025. Trained EfficientNet-B0 on 30K dermoscopy images with transfer learning and class-weighted augmentation, achieving 95% recall for melanoma triage across clinical deployment.
+- Engineered an AWS S3 and Lambda pipeline overnight to compress 3-5MB images to 300KB WebP, reducing per-image disk footprint by 94% while preserving originals in S3 for compliance. Built the mobile platform end-to-end.
 
 ### M.Y Intellectual Property — Software Engineer Intern
 *May 2024 to August 2024*
@@ -71,9 +71,9 @@ App: https://play.google.com/apps/testing/com.nonchalant.murmur
 
 ## Skills
 
-- **Languages:** C++, Python, Java, JavaScript, Rust, SQL.
-- **Technologies:** AWS, Docker, Flutter, React, Next.js, Django, Flask, Supabase, Git, MongoDB, Vue.js, SQLite, Modal.
-- **AI/ML:** PyTorch, FastAPI, ONNX Runtime, OpenCV, CUDA, vLLM, LangChain, FAISS, ANOVA, Keras, Transformers.
+- **Languages:** C++, Python, Java, CUDA, Rust.
+- **Technologies:** AWS, Docker, Flutter, React, Next.js, Django, Flask, Supabase, Git, MongoDB, Snowflake, SQLite, Modal.
+- **AI/ML:** PyTorch, FastAPI, ONNX Runtime, OpenCV, vLLM, post-training, FAISS, ANOVA, Transformers, JAX.
 - **Open-source contributions:** Meta PyTorch.
 
 ---
