@@ -53,33 +53,25 @@ async function main() {
   const writingSlugs = getAllWritingSlugs();
   const engineeringSlugs = getAllEngineeringSlugs();
   const scalingBookSlugs = getAllScalingBookSlugs();
-  const allSlugs = [
-    ...bookSlugs,
-    ...writingSlugs,
-    ...engineeringSlugs,
-    ...scalingBookSlugs,
+  // The scaling-book landing page is also listed in the writing index, so the
+  // combined list is deduped before it is written out.
+  const allPaths = [
+    ...new Set([
+      "/",
+      "/writing",
+      "/engineering",
+      "/reading",
+      "/resume",
+      "/writing/scaling-book",
+      ...bookSlugs,
+      ...writingSlugs,
+      ...engineeringSlugs,
+      ...scalingBookSlugs,
+    ]),
   ];
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${SITE_URL}/</loc>
-  </url>
-  <url>
-    <loc>${SITE_URL}/writing</loc>
-  </url>
-  <url>
-    <loc>${SITE_URL}/engineering</loc>
-  </url>
-  <url>
-    <loc>${SITE_URL}/reading</loc>
-  </url>
-  <url>
-    <loc>${SITE_URL}/resume</loc>
-  </url>
-  <url>
-    <loc>${SITE_URL}/writing/scaling-book</loc>
-  </url>${allSlugs
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${allPaths
     .map((slug) => {
       return `
   <url>

@@ -2,6 +2,14 @@
 
 A plain-text index of https://eddiechen.xyz/writing. Newest first.
 
+## Scaling Book
+*May 13, 2026* — Working through the Scaling Book chapter by chapter: depth notes plus worked solutions.
+https://eddiechen.xyz/writing/scaling-book
+
+## India, AI, and the Value Chain
+*April 25, 2026* — How countries can avoid being sidestepped by transformative AI and robotics.
+https://eddiechen.xyz/writing/india-ai-value-chain
+
 ## On: TurboQuant and KV Compression
 *March 28, 2026* — A breakdown and `.ipynb` implementation of TurboQuant.
 https://eddiechen.xyz/writing/turboquant-kv-compression
